@@ -1,9 +1,79 @@
 [
-  {"id":"VPS13C__anolis_carolinensis","pdb":"data/VPS13C__anolis_carolinensis/ranked_0.pdb","ranking":"data/VPS13C__anolis_carolinensis/ranking_debug.json"},
-  {"id":"VPS13C__balaenoptera_musculus","pdb":"data/VPS13C__balaenoptera_musculus/ranked_0.pdb","ranking":"data/VPS13C__balaenoptera_musculus/ranking_debug.json"},
-  {"id":"VPS13C__caenorhabditis_elegans","pdb":"data/VPS13C__caenorhabditis_elegans/ranked_0.pdb","ranking":"data/VPS13C__caenorhabditis_elegans/ranking_debug.json"},
-  {"id":"VPS13C__callithrix_jacchus","pdb":"data/VPS13C__callithrix_jacchus/ranked_0.pdb","ranking":"data/VPS13C__callithrix_jacchus/ranking_debug.json"},
-  {"id":"VPS13C__gallus_gallus","pdb":"data/VPS13C__gallus_gallus/ranked_0.pdb","ranking":"data/VPS13C__gallus_gallus/ranking_debug.json"},
-  {"id":"VPS13C__homo_sapiens","pdb":"data/VPS13C__homo_sapiens/ranked_0.pdb","ranking":"data/VPS13C__homo_sapiens/ranking_debug.json"},
-  {"id":"VPS13C__loxodonta_africana","pdb":"data/VPS13C__loxodonta_africana/ranked_0.pdb","ranking":"data/VPS13C__loxodonta_africana/ranking_debug.json"}
+  {
+    "id": "VPS13C__anolis_carolinensis",
+    "models": [
+      "ranked_0",
+      "ranked_1",
+      "ranked_2",
+      "ranked_3",
+      "ranked_4"
+    ],
+    "ranking": "data/VPS13C__anolis_carolinensis/ranking_debug.json"
+  },
+  {
+    "id": "VPS13C__balaenoptera_musculus",
+    "models": [
+      "ranked_0",
+      "ranked_1",
+      "ranked_2",
+      "ranked_3",
+      "ranked_4"
+    ],
+    "ranking": "data/VPS13C__balaenoptera_musculus/ranking_debug.json"
+  },
+  {
+    "id": "VPS13C__caenorhabditis_elegans",
+    "models": [
+      "ranked_0",
+      "ranked_1",
+      "ranked_2",
+      "ranked_3",
+      "ranked_4"
+    ],
+    "ranking": "data/VPS13C__caenorhabditis_elegans/ranking_debug.json"
+  },
+  {
+    "id": "VPS13C__callithrix_jacchus",
+    "models": [
+      "ranked_0",
+      "ranked_1",
+      "ranked_2",
+      "ranked_3",
+      "ranked_4"
+    ],
+    "ranking": "data/VPS13C__callithrix_jacchus/ranking_debug.json"
+  },
+  {
+    "id": "VPS13C__gallus_gallus",
+    "models": [
+      "ranked_0",
+      "ranked_1",
+      "ranked_2",
+      "ranked_3",
+      "ranked_4"
+    ],
+    "ranking": "data/VPS13C__gallus_gallus/ranking_debug.json"
+  },
+  {
+    "id": "VPS13C__homo_sapiens",
+    "models": [
+      "ranked_0",
+      "ranked_1",
+      "ranked_2",
+      "ranked_3",
+      "ranked_4"
+    ],
+    "ranking": "data/VPS13C__homo_sapiens/ranking_debug.json"
+  },
+  {
+    "id": "VPS13C__loxodonta_africana",
+    "models": [
+      "ranked_0",
+      "ranked_1",
+      "ranked_2",
+      "ranked_3",
+      "ranked_4"
+    ],
+    "ranking": "data/VPS13C__loxodonta_africana/ranking_debug.json"
+  }
 ]

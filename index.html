@@ -8,74 +8,255 @@
   <style>
     :root { --bg:#f4f7fb; --ink:#13233a; --accent:#0c6d94; --card:#ffffff; }
     body { margin:0; font-family: ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial; background: linear-gradient(140deg,#e9f5ff,#f7fbff 45%,#eef7f3); color:var(--ink); }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .top { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    select, button { padding:10px 12px; border-radius:10px; border:1px solid #b8c9d8; background:#fff; }
+    .wrap { max-width: 1260px; margin: 0 auto; padding: 20px; }
+    .top { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    select, button { padding:8px 12px; border-radius:10px; border:1px solid #b8c9d8; background:#fff; font-size:14px; }
+    button { background:var(--accent); color:#fff; border-color:var(--accent); cursor:pointer; }
+    button:hover { opacity:0.88; }
     .card { background:var(--card); border:1px solid #d8e5f0; border-radius:14px; box-shadow:0 8px 24px rgba(0,40,80,.08); }
-    #viewer { width:100%; height:70vh; min-height:460px; }
-    .meta { margin-top:12px; padding:12px; }
+    #viewer { width:100%; height:62vh; min-height:400px; }
+    .bottom-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
+    @media(max-width:700px){ .bottom-row { grid-template-columns:1fr; } }
+    .panel { padding:14px; font-size:13px; }
     a { color:var(--accent); }
+    .mq { background:#f0f4f8; padding:8px 10px; border-radius:6px; margin:4px 0; line-height:1.5; }
+    /* pLDDT legend */
+    .legend { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 0; }
+    .leg-item { display:flex; align-items:center; gap:4px; font-size:12px; }
+    .leg-swatch { width:14px; height:14px; border-radius:3px; display:inline-block; }
+    /* pLDDT chart */
+    #chart-wrap { overflow:hidden; }
+    #plddt-chart { width:100%; display:block; }
+    .chart-title { font-size:12px; color:#666; margin-bottom:4px; }
+    /* score bar */
+    .score-bar-bg { background:#e8f0f8; border-radius:4px; height:10px; margin:4px 0; overflow:hidden; }
+    .score-bar-fill { height:100%; border-radius:4px; transition:width 0.4s; }
+    #status { font-size:13px; color:#555; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h2>VPS13C Predicted Structures</h2>
-    <div class="top card" style="padding:12px;">
-      <label for="species"><strong>Species:</strong></label>
+    <h2 style="margin-bottom:10px;">VPS13C Predicted Structures</h2>
+    <div class="top card" style="padding:12px; margin-bottom:12px;">
+      <label><strong>Species:</strong></label>
       <select id="species"></select>
-      <button id="reload">Load</button>
+      <label><strong>Model:</strong></label>
+      <select id="model"></select>
+      <button id="reload">&#8635; Load</button>
       <span id="status"></span>
     </div>
-    <div class="card" style="margin-top:12px; overflow:hidden;">
+
+    <div class="card" style="overflow:hidden;">
       <div id="viewer"></div>
     </div>
-    <div id="meta" class="card meta"></div>
+
+    <!-- pLDDT color legend below viewer -->
+    <div style="padding:8px 14px; font-size:12px; color:#444;">
+      <strong>Coloring: pLDDT confidence</strong>
+      <div class="legend">
+        <div class="leg-item"><span class="leg-swatch" style="background:#0053D6"></span>&gt;90 Very high</div>
+        <div class="leg-item"><span class="leg-swatch" style="background:#65CBF3"></span>70–90 Confident</div>
+        <div class="leg-item"><span class="leg-swatch" style="background:#FFDB13"></span>50–70 Low</div>
+        <div class="leg-item"><span class="leg-swatch" style="background:#FF7D45"></span>&lt;50 Very low</div>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <!-- pLDDT chart panel -->
+      <div class="card panel" id="chart-wrap">
+        <div class="chart-title">Per-residue pLDDT (selected model)</div>
+        <canvas id="plddt-chart" height="120"></canvas>
+      </div>
+
+      <!-- Metrics panel -->
+      <div class="card panel" id="meta"></div>
+    </div>
   </div>
 
 <script>
-let viewer, manifest=[];
+let viewer, manifest = [];
 const speciesSel = document.getElementById('species');
-const statusEl = document.getElementById('status');
-const metaEl = document.getElementById('meta');
+const modelSel   = document.getElementById('model');
+const statusEl   = document.getElementById('status');
+const metaEl     = document.getElementById('meta');
+
+// AlphaFold pLDDT colour scheme
+function plddt2color(v) {
+  if (v === undefined || v === null) return '#aaa';
+  if (v >= 90) return '#0053D6';
+  if (v >= 70) return '#65CBF3';
+  if (v >= 50) return '#FFDB13';
+  return '#FF7D45';
+}
 
 async function init() {
   manifest = await fetch('manifest.json').then(r => r.json());
   manifest.forEach((m, i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = m.id;
+    opt.textContent = m.id.replace('VPS13C__', '').replace(/_/g, ' ');
     speciesSel.appendChild(opt);
   });
 
-  viewer = $3Dmol.createViewer('viewer', {backgroundColor: 'white'});
+  viewer = $3Dmol.createViewer('viewer', {backgroundColor: '#f8fbff'});
+  speciesSel.addEventListener('change', () => { updateModels(); loadSelected(); });
+  modelSel.addEventListener('change', loadSelected);
   document.getElementById('reload').addEventListener('click', loadSelected);
-  speciesSel.addEventListener('change', loadSelected);
+  updateModels();
   if (manifest.length) loadSelected();
 }
 
-async function loadSelected() {
+function updateModels() {
   const m = manifest[speciesSel.value];
-  statusEl.textContent = 'Loading...';
-  const pdb = await fetch(m.pdb).then(r => r.text());
+  modelSel.innerHTML = '';
+  (m.models || ['ranked_0']).forEach((model, i) => {
+    const opt = document.createElement('option');
+    opt.value = model;
+    opt.textContent = model;
+    opt.selected = (i === 0);
+    modelSel.appendChild(opt);
+  });
+}
+
+async function loadSelected() {
+  const m     = manifest[speciesSel.value];
+  const model = modelSel.value;                         // e.g. "ranked_2"
+  const rank  = parseInt(model.replace('ranked_', ''), 10);
+  statusEl.textContent = 'Loading…';
+
+  // Fetch PDB, ranking_debug, and relax_metrics in parallel
+  const [pdbText, ranking, relax] = await Promise.all([
+    fetch(`data/${m.id}/${model}.pdb`).then(r => r.text()),
+    fetch(`data/${m.id}/ranking_debug.json`).then(r => r.json()).catch(() => ({})),
+    fetch(`data/${m.id}/relax_metrics.json`).then(r => r.json()).catch(() => ({})),
+  ]);
+
+  // Derive internal model name (e.g. "model_4_pred_0") from ranking order
+  const modelName = (ranking.order || [])[rank] || null;
+
+  // Fetch per-residue confidence for this model
+  let conf = null;
+  if (modelName) {
+    conf = await fetch(`data/${m.id}/confidence_${modelName}.json`).then(r => r.json()).catch(() => null);
+  }
+
+  // Build residue → pLDDT map
+  const plddt_map = {};
+  if (conf && conf.residueNumber && conf.confidenceScore) {
+    conf.residueNumber.forEach((resi, idx) => {
+      plddt_map[resi] = conf.confidenceScore[idx];
+    });
+  }
+
+  // Load and colour structure
   viewer.clear();
-  viewer.addModel(pdb, 'pdb');
-  viewer.setStyle({}, {cartoon:{color:'#2f7ea1'}});
+  viewer.addModel(pdbText, 'pdb');
+  if (Object.keys(plddt_map).length) {
+    viewer.setStyle({}, { cartoon: {
+      colorfunc: atom => plddt2color(plddt_map[atom.resi]),
+      thickness: 0.8
+    }});
+  } else {
+    viewer.setStyle({}, { cartoon: { color: '#2f7ea1', thickness: 0.8 } });
+  }
   viewer.zoomTo();
   viewer.render();
 
-  let ranking = {};
-  try { ranking = await fetch(m.ranking).then(r => r.json()); } catch(e) {}
+  // Draw pLDDT chart
+  drawChart(conf);
+
+  // Compute relax stats for this model
+  let relaxHtml = '';
+  if (modelName && relax[modelName]) {
+    const rm = relax[modelName];
+    const counts = rm.remaining_violations_count || [];
+    const vals   = rm.remaining_violations       || [];
+    const totalV = counts.reduce((a, b) => a + b, 0);
+    const maxV   = Math.max(...counts, 0);
+    relaxHtml = `
+      <div class="mq">
+        <strong>Relax violations (${modelName})</strong><br>
+        Total violations: <strong>${totalV}</strong> &nbsp;|&nbsp; Max per residue: <strong>${maxV}</strong>
+      </div>`;
+  }
+
+  // Mean pLDDT for this model
+  const meanPLDDT = ranking.plddts && modelName ? ranking.plddts[modelName] : null;
+  const allPlddts = ranking.plddts
+    ? ranking.order.map((mn, i) => `ranked_${i}: ${ranking.plddts[mn].toFixed(1)}`)
+    : [];
+
   metaEl.innerHTML = `
-    <strong>${m.id}</strong><br>
-    Files: <a href="${m.pdb}">ranked_0.pdb</a> | <a href="${m.ranking}">ranking_debug.json</a><br>
-    Ranking keys: ${Object.keys(ranking).join(', ') || 'n/a'}
+    <strong>${m.id.replace('VPS13C__','').replace(/_/g,' ')}</strong>
+    &nbsp;<span style="font-size:11px;color:#888;">VPS13C</span><br><br>
+    <div class="mq">
+      <strong>Model:</strong> ${model} &nbsp;→&nbsp; ${modelName || '–'}
+    </div>
+    ${meanPLDDT !== null ? `
+    <div class="mq">
+      <strong>Mean pLDDT:</strong> ${meanPLDDT.toFixed(2)}
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${meanPLDDT}%;background:${plddt2color(meanPLDDT)};"></div></div>
+    </div>` : ''}
+    ${allPlddts.length ? `<div class="mq"><strong>All models (mean pLDDT):</strong><br>${allPlddts.join(' &nbsp;|&nbsp; ')}</div>` : ''}
+    ${relaxHtml}
+    <div class="mq" style="margin-top:8px;">
+      <strong>Download:</strong>
+      <a href="data/${m.id}/${model}.pdb">PDB</a> |
+      <a href="data/${m.id}/${model}.cif">CIF</a> |
+      <a href="data/${m.id}/ranking_debug.json">ranking_debug.json</a> |
+      <a href="data/${m.id}/relax_metrics.json">relax_metrics.json</a>
+    </div>
   `;
+
   statusEl.textContent = 'Loaded';
 }
 
+function drawChart(conf) {
+  const canvas = document.getElementById('plddt-chart');
+  const ctx    = canvas.getContext('2d');
+  const W      = canvas.parentElement.clientWidth - 28;
+  const H      = 120;
+  canvas.width  = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!conf || !conf.residueNumber || !conf.confidenceScore) {
+    ctx.fillStyle = '#aaa';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('No confidence data available', 10, H / 2);
+    return;
+  }
+
+  const scores = conf.confidenceScore;
+  const n      = scores.length;
+  if (n === 0) return;
+
+  // Draw threshold lines
+  [50, 70, 90].forEach(thresh => {
+    const y = H - (thresh / 100) * H;
+    ctx.strokeStyle = '#e0e8f0';
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#bbb';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(thresh, 2, y - 2);
+  });
+
+  // Draw per-residue bars coloured by pLDDT band
+  const barW = Math.max(1, W / n);
+  scores.forEach((v, i) => {
+    const x = (i / n) * W;
+    const h = (v / 100) * H;
+    ctx.fillStyle = plddt2color(v);
+    ctx.fillRect(x, H - h, barW + 0.5, h);
+  });
+}
+
 init().catch(err => {
-  statusEl.textContent = 'Failed';
-  metaEl.textContent = err;
+  statusEl.textContent = 'Error – see console';
+  console.error(err);
 });
 </script>
 </body>
