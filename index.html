@@ -114,16 +114,6 @@
       <div class="right-col">
         <div class="controls-row">
           <div class="control-group">
-            <label>Model</label>
-            <select id="modelSelect">
-              <option value="ranked_0">ranked_0 (best)</option>
-              <option value="ranked_1">ranked_1</option>
-              <option value="ranked_2">ranked_2</option>
-              <option value="ranked_3">ranked_3</option>
-              <option value="ranked_4">ranked_4</option>
-            </select>
-          </div>
-          <div class="control-group">
             <label>Color</label>
             <select id="colorScheme">
               <option value="plddt">pLDDT Confidence</option>
@@ -154,6 +144,13 @@
 
         <div class="viewer-wrap" id="viewerWrap">
           <div class="toolbar">
+            <select id="modelSelect" style="background:rgba(26,29,39,0.88);backdrop-filter:blur(8px);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:7px;font-size:0.72rem;cursor:pointer;">
+              <option value="ranked_0">ranked_0 ★</option>
+              <option value="ranked_1">ranked_1</option>
+              <option value="ranked_2">ranked_2</option>
+              <option value="ranked_3">ranked_3</option>
+              <option value="ranked_4">ranked_4</option>
+            </select>
             <button data-style="cartoon" class="active">Cartoon</button>
             <button data-style="surface">Surface</button>
             <button data-style="stick">Sticks</button>
