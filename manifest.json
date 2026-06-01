@@ -8,7 +8,8 @@
       "ranked_3",
       "ranked_4"
     ],
-    "ranking": "data/VPS13C__anolis_carolinensis/ranking_debug.json"
+    "ranking": "data/VPS13C__anolis_carolinensis/ranking_debug.json",
+    "relax": "data/VPS13C__anolis_carolinensis/relax_metrics.json"
   },
   {
     "id": "VPS13C__balaenoptera_musculus",
@@ -19,7 +20,8 @@
       "ranked_3",
       "ranked_4"
     ],
-    "ranking": "data/VPS13C__balaenoptera_musculus/ranking_debug.json"
+    "ranking": "data/VPS13C__balaenoptera_musculus/ranking_debug.json",
+    "relax": "data/VPS13C__balaenoptera_musculus/relax_metrics.json"
   },
   {
     "id": "VPS13C__caenorhabditis_elegans",
@@ -30,7 +32,8 @@
       "ranked_3",
       "ranked_4"
     ],
-    "ranking": "data/VPS13C__caenorhabditis_elegans/ranking_debug.json"
+    "ranking": "data/VPS13C__caenorhabditis_elegans/ranking_debug.json",
+    "relax": "data/VPS13C__caenorhabditis_elegans/relax_metrics.json"
   },
   {
     "id": "VPS13C__callithrix_jacchus",
@@ -41,7 +44,8 @@
       "ranked_3",
       "ranked_4"
     ],
-    "ranking": "data/VPS13C__callithrix_jacchus/ranking_debug.json"
+    "ranking": "data/VPS13C__callithrix_jacchus/ranking_debug.json",
+    "relax": "data/VPS13C__callithrix_jacchus/relax_metrics.json"
   },
   {
     "id": "VPS13C__gallus_gallus",
@@ -52,7 +56,8 @@
       "ranked_3",
       "ranked_4"
     ],
-    "ranking": "data/VPS13C__gallus_gallus/ranking_debug.json"
+    "ranking": "data/VPS13C__gallus_gallus/ranking_debug.json",
+    "relax": "data/VPS13C__gallus_gallus/relax_metrics.json"
   },
   {
     "id": "VPS13C__homo_sapiens",
@@ -63,7 +68,8 @@
       "ranked_3",
       "ranked_4"
     ],
-    "ranking": "data/VPS13C__homo_sapiens/ranking_debug.json"
+    "ranking": "data/VPS13C__homo_sapiens/ranking_debug.json",
+    "relax": "data/VPS13C__homo_sapiens/relax_metrics.json"
   },
   {
     "id": "VPS13C__loxodonta_africana",
@@ -74,6 +80,7 @@
       "ranked_3",
       "ranked_4"
     ],
-    "ranking": "data/VPS13C__loxodonta_africana/ranking_debug.json"
+    "ranking": "data/VPS13C__loxodonta_africana/ranking_debug.json",
+    "relax": "data/VPS13C__loxodonta_africana/relax_metrics.json"
   }
 ]

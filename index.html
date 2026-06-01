@@ -3,260 +3,735 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VPS13C Structure Viewer</title>
+  <title>VPS13C AlphaFold Structure Viewer — 5 Models</title>
   <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
-    :root { --bg:#f4f7fb; --ink:#13233a; --accent:#0c6d94; --card:#ffffff; }
-    body { margin:0; font-family: ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial; background: linear-gradient(140deg,#e9f5ff,#f7fbff 45%,#eef7f3); color:var(--ink); }
-    .wrap { max-width: 1260px; margin: 0 auto; padding: 20px; }
-    .top { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    select, button { padding:8px 12px; border-radius:10px; border:1px solid #b8c9d8; background:#fff; font-size:14px; }
-    button { background:var(--accent); color:#fff; border-color:var(--accent); cursor:pointer; }
-    button:hover { opacity:0.88; }
-    .card { background:var(--card); border:1px solid #d8e5f0; border-radius:14px; box-shadow:0 8px 24px rgba(0,40,80,.08); }
-    #viewer { width:100%; height:62vh; min-height:400px; }
-    .bottom-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
-    @media(max-width:700px){ .bottom-row { grid-template-columns:1fr; } }
-    .panel { padding:14px; font-size:13px; }
-    a { color:var(--accent); }
-    .mq { background:#f0f4f8; padding:8px 10px; border-radius:6px; margin:4px 0; line-height:1.5; }
-    /* pLDDT legend */
-    .legend { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 0; }
-    .leg-item { display:flex; align-items:center; gap:4px; font-size:12px; }
-    .leg-swatch { width:14px; height:14px; border-radius:3px; display:inline-block; }
-    /* pLDDT chart */
-    #chart-wrap { overflow:hidden; }
-    #plddt-chart { width:100%; display:block; }
-    .chart-title { font-size:12px; color:#666; margin-bottom:4px; }
-    /* score bar */
-    .score-bar-bg { background:#e8f0f8; border-radius:4px; height:10px; margin:4px 0; overflow:hidden; }
-    .score-bar-fill { height:100%; border-radius:4px; transition:width 0.4s; }
-    #status { font-size:13px; color:#555; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242735;
+      --surface3: #2e3245;
+      --border: #2e3245;
+      --text: #e4e7f0;
+      --text-dim: #8b90a5;
+      --accent: #6c9fff;
+      --accent-hover: #8bb4ff;
+      --radius: 12px;
+      --plddt-high: #0053d6;
+      --plddt-conf: #65cbf3;
+      --plddt-low: #ffdb13;
+      --plddt-vlow: #ff7d45;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .container { max-width: 1500px; margin: 0 auto; padding: 20px; }
+    header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    header h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
+    header h1 span { color: var(--accent); }
+    .badge { background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; color: var(--text-dim); }
+    .layout { display: grid; grid-template-columns: 260px 1fr; gap: 12px; align-items: start; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+    .panel-title { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 10px; }
+    .species-list { list-style: none; display: flex; flex-direction: column; gap: 3px; max-height: calc(100vh - 200px); overflow-y: auto; }
+    .species-list li { padding: 9px 11px; border-radius: 8px; cursor: pointer; transition: background 0.15s; border: 1px solid transparent; }
+    .species-list li:hover { background: var(--surface2); }
+    .species-list li.active { background: var(--surface2); border-color: var(--accent); }
+    .species-list li .common { font-weight: 500; font-size: 0.85rem; }
+    .species-list li .latin { font-style: italic; font-size: 0.73rem; color: var(--text-dim); margin-top: 1px; }
+    .right-col { display: flex; flex-direction: column; gap: 12px; }
+    .viewer-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; position: relative; }
+    #viewer { width: 100%; height: 58vh; min-height: 420px; }
+    #viewerCompare { width: 100%; height: 58vh; min-height: 420px; display: none; }
+    .compare-active #viewer { width: 50%; display: inline-block; height: 50vh; }
+    .compare-active #viewerCompare { width: 50%; display: inline-block; height: 50vh; }
+    .compare-container { display: flex; width: 100%; }
+    .compare-container > div { flex: 1; position: relative; }
+    .compare-label { position: absolute; top: 8px; left: 8px; background: rgba(26,29,39,0.85); padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; z-index: 11; border: 1px solid var(--border); }
+    .toolbar { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; z-index: 10; flex-wrap: wrap; max-width: 420px; justify-content: flex-end; }
+    .toolbar button { background: rgba(26,29,39,0.88); backdrop-filter: blur(8px); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 7px; font-size: 0.72rem; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .toolbar button:hover { background: var(--surface2); border-color: var(--accent); }
+    .toolbar button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .legend { position: absolute; bottom: 10px; left: 10px; background: rgba(26,29,39,0.92); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 9px; padding: 9px 12px; z-index: 10; }
+    .legend-title { font-size: 0.65rem; font-weight: 600; color: var(--text-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .legend-bar { width: 160px; height: 12px; border-radius: 3px; }
+    .legend-bar.plddt { background: linear-gradient(to right, #ff7d45, #ffdb13, #65cbf3, #0053d6); }
+    .legend-bar.rainbow { background: linear-gradient(to right, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff); }
+    .legend-bar.hydro { background: linear-gradient(to right, #0077ff, #ffffff, #ff4400); }
+    .legend-labels { display: flex; justify-content: space-between; font-size: 0.63rem; color: var(--text-dim); margin-top: 2px; }
+    .controls-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .control-group { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
+    .control-group label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); white-space: nowrap; }
+    .control-group select, .control-group input[type="number"] { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 6px; font-size: 0.78rem; }
+    .control-group input[type="range"] { width: 100px; accent-color: var(--accent); }
+    .control-group .range-val { font-size: 0.75rem; color: var(--accent); min-width: 24px; }
+    .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; position: relative; }
+    .chart-wrap canvas { width: 100% !important; height: 140px !important; }
+    .info-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+    .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; flex: 1; min-width: 120px; }
+    .info-card .label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 3px; }
+    .info-card .value { font-size: 1.2rem; font-weight: 600; }
+    .info-card .value.good { color: #65cbf3; }
+    .info-card .value.medium { color: #ffdb13; }
+    .info-card .value.low { color: #ff7d45; }
+    .download-link { color: var(--accent); text-decoration: none; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; }
+    .download-link:hover { color: var(--accent-hover); text-decoration: underline; }
+    .loading-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(15,17,23,0.7); z-index: 20; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .loading-overlay.show { opacity: 1; pointer-events: auto; }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .tooltip-3d { position: absolute; background: rgba(15,17,23,0.95); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.75rem; pointer-events: none; z-index: 30; display: none; }
+    .tooltip-3d .res-name { font-weight: 600; color: var(--accent); }
+    .tooltip-3d .res-detail { color: var(--text-dim); margin-top: 2px; }
+    .measure-info { position: absolute; top: 10px; left: 10px; background: rgba(26,29,39,0.92); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; font-size: 0.75rem; z-index: 15; display: none; }
+    .highlight-input { display: flex; gap: 6px; align-items: center; }
+    .highlight-input input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 6px; font-size: 0.78rem; width: 100px; }
+    .highlight-input button { background: var(--accent); border: none; color: #fff; padding: 5px 10px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; }
+    .compare-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 6px; font-size: 0.78rem; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h2 style="margin-bottom:10px;">VPS13C Predicted Structures</h2>
-    <div class="top card" style="padding:12px; margin-bottom:12px;">
-      <label><strong>Species:</strong></label>
-      <select id="species"></select>
-      <label><strong>Model:</strong></label>
-      <select id="model"></select>
-      <button id="reload">&#8635; Load</button>
-      <span id="status"></span>
-    </div>
+  <div class="container">
+    <header>
+      <h1><span>VPS13C</span> AlphaFold Structures</h1>
+      <span class="badge">7 species · 5 models · Interactive Viewer</span>
+    </header>
 
-    <div class="card" style="overflow:hidden;">
-      <div id="viewer"></div>
-    </div>
-
-    <!-- pLDDT color legend below viewer -->
-    <div style="padding:8px 14px; font-size:12px; color:#444;">
-      <strong>Coloring: pLDDT confidence</strong>
-      <div class="legend">
-        <div class="leg-item"><span class="leg-swatch" style="background:#0053D6"></span>&gt;90 Very high</div>
-        <div class="leg-item"><span class="leg-swatch" style="background:#65CBF3"></span>70–90 Confident</div>
-        <div class="leg-item"><span class="leg-swatch" style="background:#FFDB13"></span>50–70 Low</div>
-        <div class="leg-item"><span class="leg-swatch" style="background:#FF7D45"></span>&lt;50 Very low</div>
-      </div>
-    </div>
-
-    <div class="bottom-row">
-      <!-- pLDDT chart panel -->
-      <div class="card panel" id="chart-wrap">
-        <div class="chart-title">Per-residue pLDDT (selected model)</div>
-        <canvas id="plddt-chart" height="120"></canvas>
+    <div class="layout">
+      <div>
+        <div class="panel">
+          <div class="panel-title">Species</div>
+          <ul class="species-list" id="speciesList"></ul>
+        </div>
       </div>
 
-      <!-- Metrics panel -->
-      <div class="card panel" id="meta"></div>
+      <div class="right-col">
+        <div class="controls-row">
+          <div class="control-group">
+            <label>Model</label>
+            <select id="modelSelect">
+              <option value="ranked_0">ranked_0 (best)</option>
+              <option value="ranked_1">ranked_1</option>
+              <option value="ranked_2">ranked_2</option>
+              <option value="ranked_3">ranked_3</option>
+              <option value="ranked_4">ranked_4</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Color</label>
+            <select id="colorScheme">
+              <option value="plddt">pLDDT Confidence</option>
+              <option value="rainbow">Rainbow (N→C)</option>
+              <option value="ss">Secondary Structure</option>
+              <option value="hydro">Hydrophobicity</option>
+              <option value="chain">Chain</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>pLDDT ≥</label>
+            <input type="range" id="plddtSlider" min="0" max="100" value="0" step="5" />
+            <span class="range-val" id="plddtVal">0</span>
+          </div>
+          <div class="control-group">
+            <label>Compare</label>
+            <select id="compareSelect" class="compare-select">
+              <option value="">Off</option>
+            </select>
+          </div>
+          <div class="control-group highlight-input">
+            <label>Highlight</label>
+            <input type="text" id="highlightRange" placeholder="e.g. 100-200" />
+            <button id="highlightBtn">Go</button>
+            <button id="clearHighlight" style="background:var(--surface3);">Clear</button>
+          </div>
+        </div>
+
+        <div class="viewer-wrap" id="viewerWrap">
+          <div class="toolbar">
+            <button data-style="cartoon" class="active">Cartoon</button>
+            <button data-style="surface">Surface</button>
+            <button data-style="stick">Sticks</button>
+            <button data-style="sphere">Spheres</button>
+            <button id="btnSpin">Spin</button>
+            <button id="btnMeasure">Measure</button>
+            <button id="btnScreenshot">📷</button>
+            <button id="btnReset">Reset</button>
+          </div>
+          <div class="legend" id="legend">
+            <div class="legend-title" id="legendTitle">pLDDT Confidence</div>
+            <div class="legend-bar plddt" id="legendBar"></div>
+            <div class="legend-labels" id="legendLabels"><span>&lt;50</span><span>70</span><span>&gt;90</span></div>
+          </div>
+          <div class="tooltip-3d" id="tooltip3d">
+            <div class="res-name" id="ttName"></div>
+            <div class="res-detail" id="ttDetail"></div>
+          </div>
+          <div class="measure-info" id="measureInfo">Click two atoms to measure distance. <a href="#" id="cancelMeasure" style="color:var(--accent);">Cancel</a></div>
+          <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+          <div id="mainViewerContainer">
+            <div id="viewer"></div>
+          </div>
+        </div>
+
+        <div class="chart-wrap">
+          <div class="panel-title">Per-Residue pLDDT</div>
+          <canvas id="plddtChart"></canvas>
+        </div>
+
+        <div class="info-bar" id="infoBar"></div>
+      </div>
     </div>
   </div>
 
 <script>
-let viewer, manifest = [];
-const speciesSel = document.getElementById('species');
-const modelSel   = document.getElementById('model');
-const statusEl   = document.getElementById('status');
-const metaEl     = document.getElementById('meta');
+const SPECIES_META = {
+  'anolis_carolinensis': { common: 'Green Anole', icon: '🦎' },
+  'balaenoptera_musculus': { common: 'Blue Whale', icon: '🐋' },
+  'caenorhabditis_elegans': { common: 'C. elegans', icon: '🪱' },
+  'callithrix_jacchus': { common: 'Common Marmoset', icon: '🐒' },
+  'gallus_gallus': { common: 'Chicken', icon: '🐔' },
+  'homo_sapiens': { common: 'Human', icon: '🧬' },
+  'loxodonta_africana': { common: 'African Elephant', icon: '🐘' },
+};
 
-// AlphaFold pLDDT colour scheme
-function plddt2color(v) {
-  if (v === undefined || v === null) return '#aaa';
-  if (v >= 90) return '#0053D6';
-  if (v >= 70) return '#65CBF3';
-  if (v >= 50) return '#FFDB13';
-  return '#FF7D45';
+const HYDRO_SCALE = {
+  'ILE':4.5,'VAL':4.2,'LEU':3.8,'PHE':2.8,'CYS':2.5,'MET':1.9,'ALA':1.8,
+  'GLY':-0.4,'THR':-0.7,'SER':-0.8,'TRP':-0.9,'TYR':-1.3,'PRO':-1.6,
+  'HIS':-3.2,'GLU':-3.5,'GLN':-3.5,'ASP':-3.5,'ASN':-3.5,'LYS':-3.9,'ARG':-4.5
+};
+
+let viewer, viewerCompare, manifest = [], currentIdx = 0, compareIdx = -1;
+let spinning = false, currentStyle = 'cartoon', currentColor = 'plddt';
+let plddtThreshold = 0, measuring = false, measureAtoms = [];
+let plddtChart = null, perResiduePlddt = [], currentPdbData = '';
+let labels3d = [];
+let currentModel = 'ranked_0';
+
+function getSpeciesKey(id) { return id.replace('VPS13C__', ''); }
+
+function formatSpecies(id) {
+  const key = getSpeciesKey(id);
+  const meta = SPECIES_META[key] || { common: key, icon: '' };
+  const latin = key.replace('_', ' ');
+  return { common: meta.common, latin: latin.charAt(0).toUpperCase() + latin.slice(1), icon: meta.icon };
+}
+
+function plddt2color(val) {
+  if (val > 90) return '#0053d6';
+  if (val > 70) return '#65cbf3';
+  if (val > 50) return '#ffdb13';
+  return '#ff7d45';
+}
+
+function rainbow(idx, total) {
+  const h = (idx / total) * 360;
+  return `hsl(${h}, 85%, 55%)`;
+}
+
+function ssColor(ss) {
+  if (ss === 'h') return '#ff4466';
+  if (ss === 's') return '#4488ff';
+  return '#44cc88';
+}
+
+function hydroColor(resn) {
+  const val = HYDRO_SCALE[resn] || 0;
+  const norm = (val + 4.5) / 9.0;
+  const r = Math.round(norm * 255);
+  const b = Math.round((1 - norm) * 255);
+  return `rgb(${r}, ${Math.round((1 - Math.abs(norm - 0.5) * 2) * 180)}, ${b})`;
+}
+
+function getColorFunc(scheme) {
+  if (scheme === 'plddt') return function(atom) { return plddt2color(atom.b); };
+  if (scheme === 'rainbow') return function(atom) { return rainbow(atom.resi, atom.model?.selectedAtoms?.length || 3000); };
+  if (scheme === 'ss') return function(atom) { return ssColor(atom.ss); };
+  if (scheme === 'hydro') return function(atom) { return hydroColor(atom.resn); };
+  if (scheme === 'chain') return function(atom) {
+    const chains = ['#6c9fff','#ff6c9f','#9fff6c','#ff9f6c','#9f6cff','#6cffa5'];
+    return chains[atom.chain.charCodeAt(0) % chains.length];
+  };
+  return function(atom) { return plddt2color(atom.b); };
+}
+
+function applyStyle(v, style, colorScheme, threshold) {
+  v.setStyle({}, {});
+  const cf = getColorFunc(colorScheme);
+  const sel = threshold > 0 ? {b: {gte: threshold}} : {};
+  if (threshold > 0) {
+    v.setStyle({b: {lt: threshold}}, {cartoon: {color: '#333333', opacity: 0.15}});
+  }
+  if (style === 'cartoon') {
+    v.setStyle(sel, {cartoon: {colorfunc: cf}});
+  } else if (style === 'surface') {
+    v.setStyle(sel, {cartoon: {colorfunc: cf, opacity: 0.25}});
+    v.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.82, colorfunc: cf}, sel);
+  } else if (style === 'stick') {
+    v.setStyle(sel, {stick: {colorfunc: cf, radius: 0.14}});
+  } else if (style === 'sphere') {
+    v.setStyle(sel, {sphere: {colorfunc: cf, scale: 0.3}});
+  }
+  v.render();
+}
+
+function updateLegend(scheme) {
+  const bar = document.getElementById('legendBar');
+  const title = document.getElementById('legendTitle');
+  const labels = document.getElementById('legendLabels');
+  bar.className = 'legend-bar';
+  if (scheme === 'plddt') {
+    bar.classList.add('plddt');
+    title.textContent = 'pLDDT Confidence';
+    labels.innerHTML = '<span>&lt;50</span><span>70</span><span>&gt;90</span>';
+  } else if (scheme === 'rainbow') {
+    bar.classList.add('rainbow');
+    title.textContent = 'Sequence Position';
+    labels.innerHTML = '<span>N-term</span><span></span><span>C-term</span>';
+  } else if (scheme === 'hydro') {
+    bar.classList.add('hydro');
+    title.textContent = 'Hydrophobicity';
+    labels.innerHTML = '<span>Hydrophilic</span><span></span><span>Hydrophobic</span>';
+  } else {
+    bar.style.background = scheme === 'ss' ? 'linear-gradient(to right, #ff4466, #4488ff, #44cc88)' : 'linear-gradient(to right, #6c9fff, #ff6c9f, #9fff6c)';
+    title.textContent = scheme === 'ss' ? 'Secondary Structure' : 'Chain';
+    labels.innerHTML = scheme === 'ss' ? '<span>Helix</span><span>Sheet</span><span>Loop</span>' : '<span>Chain A</span><span>B</span><span>C</span>';
+  }
+}
+
+function extractPerResiduePlddt(pdbText) {
+  const residues = {};
+  const lines = pdbText.split('\n');
+  for (const line of lines) {
+    if (!line.startsWith('ATOM')) continue;
+    const resSeq = parseInt(line.substring(22, 26).trim());
+    const bfactor = parseFloat(line.substring(60, 66).trim());
+    if (!residues[resSeq]) residues[resSeq] = [];
+    residues[resSeq].push(bfactor);
+  }
+  const result = [];
+  const keys = Object.keys(residues).map(Number).sort((a, b) => a - b);
+  for (const k of keys) {
+    const avg = residues[k].reduce((a, b) => a + b, 0) / residues[k].length;
+    result.push({ resi: k, plddt: avg });
+  }
+  return result;
+}
+
+function buildPlddtChart(data) {
+  const ctx = document.getElementById('plddtChart').getContext('2d');
+  if (plddtChart) plddtChart.destroy();
+
+  const colors = data.map(d => plddt2color(d.plddt));
+  plddtChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.resi),
+      datasets: [{
+        data: data.map(d => d.plddt),
+        backgroundColor: colors,
+        borderWidth: 0,
+        barPercentage: 1.0,
+        categoryPercentage: 1.0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => `Residue ${data[items[0].dataIndex].resi}`,
+            label: (item) => `pLDDT: ${item.raw.toFixed(1)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          title: { display: true, text: 'Residue', color: '#8b90a5', font: { size: 10 } },
+          ticks: { color: '#8b90a5', maxTicksLimit: 20, font: { size: 9 } },
+          grid: { display: false }
+        },
+        y: {
+          display: true,
+          min: 0, max: 100,
+          title: { display: true, text: 'pLDDT', color: '#8b90a5', font: { size: 10 } },
+          ticks: { color: '#8b90a5', font: { size: 9 } },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        }
+      },
+      onClick: (evt, elements) => {
+        if (elements.length > 0) {
+          const idx = elements[0].index;
+          const resi = data[idx].resi;
+          viewer.zoomTo({resi: resi});
+          viewer.render();
+        }
+      }
+    }
+  });
+}
+
+function buildSpeciesList() {
+  const list = document.getElementById('speciesList');
+  const compareSelect = document.getElementById('compareSelect');
+  manifest.forEach((m, i) => {
+    const info = formatSpecies(m.id);
+    const li = document.createElement('li');
+    li.innerHTML = `<div class="common">${info.icon} ${info.common}</div><div class="latin">${info.latin}</div>`;
+    li.addEventListener('click', () => loadStructure(i));
+    list.appendChild(li);
+
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${info.icon} ${info.common}`;
+    compareSelect.appendChild(opt);
+  });
+}
+
+function setActiveSpecies(idx) {
+  document.querySelectorAll('.species-list li').forEach((li, i) => li.classList.toggle('active', i === idx));
+}
+
+async function loadStructure(idx) {
+  currentIdx = idx;
+  setActiveSpecies(idx);
+  const m = manifest[idx];
+  const loading = document.getElementById('loading');
+  loading.classList.add('show');
+
+  const pdbPath = `data/${m.id}/${currentModel}.pdb`;
+  currentPdbData = await fetch(pdbPath).then(r => r.text());
+  viewer.clear();
+  viewer.removeAllLabels();
+  viewer.removeAllShapes();
+  labels3d = [];
+  viewer.addModel(currentPdbData, 'pdb');
+  applyStyle(viewer, currentStyle, currentColor, plddtThreshold);
+  viewer.zoomTo();
+  viewer.render();
+  if (spinning) viewer.spin('y');
+
+  perResiduePlddt = extractPerResiduePlddt(currentPdbData);
+  buildPlddtChart(perResiduePlddt);
+
+  loading.classList.remove('show');
+
+  let ranking = {}, relax = {};
+  try { ranking = await fetch(m.ranking).then(r => r.json()); } catch(e) {}
+  try { relax   = await fetch(m.relax).then(r => r.json()); }   catch(e) {}
+
+  // Derive internal model name from rank index
+  const rankIdx  = parseInt(currentModel.replace('ranked_', ''), 10);
+  const modelName = (ranking.order || [])[rankIdx] || null;
+
+  // Load per-residue confidence from dedicated JSON if available
+  if (modelName) {
+    try {
+      const conf = await fetch(`data/${m.id}/confidence_${modelName}.json`).then(r => r.json());
+      if (conf.residueNumber && conf.confidenceScore) {
+        const mapped = conf.residueNumber.map((resi, i) => ({ resi, plddt: conf.confidenceScore[i] }));
+        buildPlddtChart(mapped);
+      }
+    } catch(e) {}
+  }
+
+  const info = formatSpecies(m.id);
+  const meanPlddt = (ranking.plddts && modelName) ? ranking.plddts[modelName] : null;
+  const plddtClass = meanPlddt > 70 ? 'good' : meanPlddt > 50 ? 'medium' : 'low';
+  const numResidues = perResiduePlddt.length;
+
+  // Relax metrics for this model
+  let relaxHtml = '';
+  if (modelName && relax[modelName]) {
+    const rm = relax[modelName];
+    const totalV = (rm.remaining_violations_count || []).reduce((a, b) => a + b, 0);
+    const maxV   = Math.max(...(rm.remaining_violations_count || [0]));
+    relaxHtml = `
+    <div class="info-card">
+      <div class="label">Relax Violations</div>
+      <div class="value" style="font-size:0.9rem;">${totalV} total · ${maxV} max</div>
+    </div>`;
+  }
+
+  // All-models pLDDT summary
+  const allModels = ranking.order
+    ? ranking.order.map((mn, i) => `ranked_${i}: ${ranking.plddts[mn].toFixed(1)}`).join(' · ')
+    : '';
+
+  document.getElementById('infoBar').innerHTML = `
+    <div class="info-card">
+      <div class="label">Species</div>
+      <div class="value" style="font-size:0.95rem;">${info.icon} ${info.common}</div>
+    </div>
+    <div class="info-card">
+      <div class="label">Mean pLDDT</div>
+      <div class="value ${plddtClass}">${meanPlddt ? meanPlddt.toFixed(1) : 'n/a'}</div>
+    </div>
+    <div class="info-card">
+      <div class="label">Residues</div>
+      <div class="value" style="font-size:1rem;">${numResidues}</div>
+    </div>
+    <div class="info-card">
+      <div class="label">Model</div>
+      <div class="value" style="font-size:0.85rem;">${currentModel}<br><span style="font-size:0.7rem;color:var(--text-dim);">${modelName || ''}</span></div>
+    </div>
+    ${relaxHtml}
+    <div class="info-card">
+      <div class="label">All models (mean pLDDT)</div>
+      <div class="value" style="font-size:0.72rem;color:var(--text-dim);font-weight:400;">${allModels}</div>
+    </div>
+    <div class="info-card">
+      <div class="label">Download</div>
+      <div class="value" style="font-size:0.85rem;">
+        <a class="download-link" href="data/${m.id}/${currentModel}.pdb" download>PDB ↓</a>
+        &nbsp;
+        <a class="download-link" href="data/${m.id}/${currentModel}.cif" download>CIF ↓</a>
+        &nbsp;
+        <a class="download-link" href="${m.ranking}" download>JSON ↓</a>
+      </div>
+    </div>
+  `;
+}
+
+async function loadCompare(idx) {
+  if (idx < 0) {
+    document.getElementById('viewerWrap').classList.remove('compare-active');
+    document.getElementById('mainViewerContainer').innerHTML = '<div id="viewer"></div>';
+    viewer = $3Dmol.createViewer('viewer', { backgroundColor: '#1a1d27', antialias: true });
+    loadStructure(currentIdx);
+    return;
+  }
+  compareIdx = idx;
+  const wrap = document.getElementById('viewerWrap');
+  wrap.classList.add('compare-active');
+
+  const container = document.getElementById('mainViewerContainer');
+  const infoA = formatSpecies(manifest[currentIdx].id);
+  const infoB = formatSpecies(manifest[idx].id);
+  container.innerHTML = `
+    <div class="compare-container">
+      <div><div class="compare-label">${infoA.icon} ${infoA.common}</div><div id="viewer"></div></div>
+      <div><div class="compare-label">${infoB.icon} ${infoB.common}</div><div id="viewerCompare"></div></div>
+    </div>`;
+
+  const vEl = document.getElementById('viewer');
+  const vcEl = document.getElementById('viewerCompare');
+  vEl.style.height = '55vh';
+  vcEl.style.height = '55vh';
+  vcEl.style.display = 'block';
+
+  viewer = $3Dmol.createViewer('viewer', { backgroundColor: '#1a1d27', antialias: true });
+  viewerCompare = $3Dmol.createViewer('viewerCompare', { backgroundColor: '#1a1d27', antialias: true });
+
+  const pdb1 = await fetch(`data/${manifest[currentIdx].id}/${currentModel}.pdb`).then(r => r.text());
+  const pdb2 = await fetch(`data/${manifest[idx].id}/${currentModel}.pdb`).then(r => r.text());
+
+  viewer.addModel(pdb1, 'pdb');
+  applyStyle(viewer, currentStyle, currentColor, plddtThreshold);
+  viewer.zoomTo(); viewer.render();
+
+  viewerCompare.addModel(pdb2, 'pdb');
+  applyStyle(viewerCompare, currentStyle, currentColor, plddtThreshold);
+  viewerCompare.zoomTo(); viewerCompare.render();
+}
+
+function setupHover() {
+  const tooltip = document.getElementById('tooltip3d');
+  const ttName = document.getElementById('ttName');
+  const ttDetail = document.getElementById('ttDetail');
+  const viewerEl = document.getElementById('viewer');
+
+  viewerEl.addEventListener('mousemove', function(e) {
+    const rect = viewerEl.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const intersects = viewer.selectedAtoms({clickable: true});
+    tooltip.style.left = (x + 15) + 'px';
+    tooltip.style.top = (y - 10) + 'px';
+  });
+
+  viewer.setHoverable({}, true,
+    function(atom, viewer, event, container) {
+      if (!atom) return;
+      ttName.textContent = `${atom.resn} ${atom.resi} (Chain ${atom.chain})`;
+      ttDetail.textContent = `Atom: ${atom.atom} · B-factor (pLDDT): ${atom.b.toFixed(1)}`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (event.offsetX + 15) + 'px';
+      tooltip.style.top = (event.offsetY - 10) + 'px';
+    },
+    function(atom) {
+      tooltip.style.display = 'none';
+    }
+  );
+  viewer.setHoverDuration(50);
+  viewer.render();
+}
+
+function setupMeasure() {
+  const info = document.getElementById('measureInfo');
+  document.getElementById('btnMeasure').addEventListener('click', function() {
+    measuring = !measuring;
+    this.classList.toggle('active', measuring);
+    info.style.display = measuring ? 'block' : 'none';
+    measureAtoms = [];
+    viewer.removeAllShapes();
+    viewer.render();
+  });
+  document.getElementById('cancelMeasure').addEventListener('click', function(e) {
+    e.preventDefault();
+    measuring = false;
+    document.getElementById('btnMeasure').classList.remove('active');
+    info.style.display = 'none';
+    measureAtoms = [];
+    viewer.removeAllShapes();
+    viewer.render();
+  });
+
+  viewer.setClickable({}, true, function(atom) {
+    if (!measuring) return;
+    measureAtoms.push(atom);
+    viewer.addSphere({center: {x: atom.x, y: atom.y, z: atom.z}, radius: 0.5, color: '#ff4466'});
+
+    if (measureAtoms.length === 2) {
+      const a1 = measureAtoms[0], a2 = measureAtoms[1];
+      const dist = Math.sqrt((a1.x-a2.x)**2 + (a1.y-a2.y)**2 + (a1.z-a2.z)**2);
+      viewer.addCylinder({
+        start: {x: a1.x, y: a1.y, z: a1.z},
+        end: {x: a2.x, y: a2.y, z: a2.z},
+        radius: 0.1, color: '#ff4466', fromCap: 1, toCap: 1
+      });
+      viewer.addLabel(`${dist.toFixed(2)} Å`, {
+        position: {x: (a1.x+a2.x)/2, y: (a1.y+a2.y)/2, z: (a1.z+a2.z)/2},
+        backgroundColor: 'rgba(26,29,39,0.9)',
+        fontColor: '#ff4466',
+        fontSize: 12,
+        borderRadius: 6
+      });
+      viewer.render();
+      measureAtoms = [];
+    } else {
+      viewer.render();
+    }
+  });
+}
+
+function setupHighlight() {
+  document.getElementById('highlightBtn').addEventListener('click', () => {
+    const val = document.getElementById('highlightRange').value.trim();
+    if (!val) return;
+    const parts = val.split('-').map(Number);
+    const start = parts[0];
+    const end = parts[1] || parts[0];
+
+    viewer.setStyle({resi: {gte: start, lte: end}}, {cartoon: {color: '#ff4466'}});
+    viewer.addLabel(`${start}-${end}`, {
+      position: viewer.modelToScreen ? undefined : undefined,
+      fontSize: 11,
+      backgroundColor: 'rgba(255,68,102,0.8)',
+      fontColor: '#fff',
+      borderRadius: 4,
+    });
+    viewer.zoomTo({resi: {gte: start, lte: end}});
+    viewer.render();
+  });
+
+  document.getElementById('clearHighlight').addEventListener('click', () => {
+    viewer.removeAllLabels();
+    viewer.removeAllShapes();
+    applyStyle(viewer, currentStyle, currentColor, plddtThreshold);
+    viewer.zoomTo();
+    viewer.render();
+  });
+}
+
+function setupScreenshot() {
+  document.getElementById('btnScreenshot').addEventListener('click', () => {
+    const imgData = viewer.pngURI();
+    const link = document.createElement('a');
+    link.download = `VPS13C_${manifest[currentIdx].id}_${currentModel}.png`;
+    link.href = imgData;
+    link.click();
+  });
 }
 
 async function init() {
   manifest = await fetch('manifest.json').then(r => r.json());
-  manifest.forEach((m, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = m.id.replace('VPS13C__', '').replace(/_/g, ' ');
-    speciesSel.appendChild(opt);
+  buildSpeciesList();
+
+  viewer = $3Dmol.createViewer('viewer', { backgroundColor: '#1a1d27', antialias: true });
+
+  document.getElementById('modelSelect').addEventListener('change', function() {
+    currentModel = this.value;
+    loadStructure(currentIdx);
   });
 
-  viewer = $3Dmol.createViewer('viewer', {backgroundColor: '#f8fbff'});
-  speciesSel.addEventListener('change', () => { updateModels(); loadSelected(); });
-  modelSel.addEventListener('change', loadSelected);
-  document.getElementById('reload').addEventListener('click', loadSelected);
-  updateModels();
-  if (manifest.length) loadSelected();
-}
-
-function updateModels() {
-  const m = manifest[speciesSel.value];
-  modelSel.innerHTML = '';
-  (m.models || ['ranked_0']).forEach((model, i) => {
-    const opt = document.createElement('option');
-    opt.value = model;
-    opt.textContent = model;
-    opt.selected = (i === 0);
-    modelSel.appendChild(opt);
-  });
-}
-
-async function loadSelected() {
-  const m     = manifest[speciesSel.value];
-  const model = modelSel.value;                         // e.g. "ranked_2"
-  const rank  = parseInt(model.replace('ranked_', ''), 10);
-  statusEl.textContent = 'Loading…';
-
-  // Fetch PDB, ranking_debug, and relax_metrics in parallel
-  const [pdbText, ranking, relax] = await Promise.all([
-    fetch(`data/${m.id}/${model}.pdb`).then(r => r.text()),
-    fetch(`data/${m.id}/ranking_debug.json`).then(r => r.json()).catch(() => ({})),
-    fetch(`data/${m.id}/relax_metrics.json`).then(r => r.json()).catch(() => ({})),
-  ]);
-
-  // Derive internal model name (e.g. "model_4_pred_0") from ranking order
-  const modelName = (ranking.order || [])[rank] || null;
-
-  // Fetch per-residue confidence for this model
-  let conf = null;
-  if (modelName) {
-    conf = await fetch(`data/${m.id}/confidence_${modelName}.json`).then(r => r.json()).catch(() => null);
-  }
-
-  // Build residue → pLDDT map
-  const plddt_map = {};
-  if (conf && conf.residueNumber && conf.confidenceScore) {
-    conf.residueNumber.forEach((resi, idx) => {
-      plddt_map[resi] = conf.confidenceScore[idx];
+  document.querySelectorAll('.toolbar button[data-style]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentStyle = btn.dataset.style;
+      document.querySelectorAll('.toolbar button[data-style]').forEach(b => b.classList.toggle('active', b.dataset.style === currentStyle));
+      applyStyle(viewer, currentStyle, currentColor, plddtThreshold);
+      if (viewerCompare) applyStyle(viewerCompare, currentStyle, currentColor, plddtThreshold);
     });
-  }
-
-  // Load and colour structure
-  viewer.clear();
-  viewer.addModel(pdbText, 'pdb');
-  if (Object.keys(plddt_map).length) {
-    viewer.setStyle({}, { cartoon: {
-      colorfunc: atom => plddt2color(plddt_map[atom.resi]),
-      thickness: 0.8
-    }});
-  } else {
-    viewer.setStyle({}, { cartoon: { color: '#2f7ea1', thickness: 0.8 } });
-  }
-  viewer.zoomTo();
-  viewer.render();
-
-  // Draw pLDDT chart
-  drawChart(conf);
-
-  // Compute relax stats for this model
-  let relaxHtml = '';
-  if (modelName && relax[modelName]) {
-    const rm = relax[modelName];
-    const counts = rm.remaining_violations_count || [];
-    const vals   = rm.remaining_violations       || [];
-    const totalV = counts.reduce((a, b) => a + b, 0);
-    const maxV   = Math.max(...counts, 0);
-    relaxHtml = `
-      <div class="mq">
-        <strong>Relax violations (${modelName})</strong><br>
-        Total violations: <strong>${totalV}</strong> &nbsp;|&nbsp; Max per residue: <strong>${maxV}</strong>
-      </div>`;
-  }
-
-  // Mean pLDDT for this model
-  const meanPLDDT = ranking.plddts && modelName ? ranking.plddts[modelName] : null;
-  const allPlddts = ranking.plddts
-    ? ranking.order.map((mn, i) => `ranked_${i}: ${ranking.plddts[mn].toFixed(1)}`)
-    : [];
-
-  metaEl.innerHTML = `
-    <strong>${m.id.replace('VPS13C__','').replace(/_/g,' ')}</strong>
-    &nbsp;<span style="font-size:11px;color:#888;">VPS13C</span><br><br>
-    <div class="mq">
-      <strong>Model:</strong> ${model} &nbsp;→&nbsp; ${modelName || '–'}
-    </div>
-    ${meanPLDDT !== null ? `
-    <div class="mq">
-      <strong>Mean pLDDT:</strong> ${meanPLDDT.toFixed(2)}
-      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${meanPLDDT}%;background:${plddt2color(meanPLDDT)};"></div></div>
-    </div>` : ''}
-    ${allPlddts.length ? `<div class="mq"><strong>All models (mean pLDDT):</strong><br>${allPlddts.join(' &nbsp;|&nbsp; ')}</div>` : ''}
-    ${relaxHtml}
-    <div class="mq" style="margin-top:8px;">
-      <strong>Download:</strong>
-      <a href="data/${m.id}/${model}.pdb">PDB</a> |
-      <a href="data/${m.id}/${model}.cif">CIF</a> |
-      <a href="data/${m.id}/ranking_debug.json">ranking_debug.json</a> |
-      <a href="data/${m.id}/relax_metrics.json">relax_metrics.json</a>
-    </div>
-  `;
-
-  statusEl.textContent = 'Loaded';
-}
-
-function drawChart(conf) {
-  const canvas = document.getElementById('plddt-chart');
-  const ctx    = canvas.getContext('2d');
-  const W      = canvas.parentElement.clientWidth - 28;
-  const H      = 120;
-  canvas.width  = W;
-  canvas.height = H;
-  ctx.clearRect(0, 0, W, H);
-
-  if (!conf || !conf.residueNumber || !conf.confidenceScore) {
-    ctx.fillStyle = '#aaa';
-    ctx.font = '13px sans-serif';
-    ctx.fillText('No confidence data available', 10, H / 2);
-    return;
-  }
-
-  const scores = conf.confidenceScore;
-  const n      = scores.length;
-  if (n === 0) return;
-
-  // Draw threshold lines
-  [50, 70, 90].forEach(thresh => {
-    const y = H - (thresh / 100) * H;
-    ctx.strokeStyle = '#e0e8f0';
-    ctx.lineWidth   = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#bbb';
-    ctx.font = '10px sans-serif';
-    ctx.fillText(thresh, 2, y - 2);
   });
 
-  // Draw per-residue bars coloured by pLDDT band
-  const barW = Math.max(1, W / n);
-  scores.forEach((v, i) => {
-    const x = (i / n) * W;
-    const h = (v / 100) * H;
-    ctx.fillStyle = plddt2color(v);
-    ctx.fillRect(x, H - h, barW + 0.5, h);
+  document.getElementById('colorScheme').addEventListener('change', function() {
+    currentColor = this.value;
+    updateLegend(currentColor);
+    applyStyle(viewer, currentStyle, currentColor, plddtThreshold);
+    if (viewerCompare) applyStyle(viewerCompare, currentStyle, currentColor, plddtThreshold);
   });
+
+  document.getElementById('plddtSlider').addEventListener('input', function() {
+    plddtThreshold = parseInt(this.value);
+    document.getElementById('plddtVal').textContent = plddtThreshold;
+    applyStyle(viewer, currentStyle, currentColor, plddtThreshold);
+    if (viewerCompare) applyStyle(viewerCompare, currentStyle, currentColor, plddtThreshold);
+  });
+
+  document.getElementById('compareSelect').addEventListener('change', function() {
+    const val = this.value;
+    if (val === '') {
+      loadCompare(-1);
+    } else {
+      loadCompare(parseInt(val));
+    }
+  });
+
+  document.getElementById('btnSpin').addEventListener('click', function() {
+    spinning = !spinning;
+    this.classList.toggle('active', spinning);
+    if (spinning) { viewer.spin('y'); if (viewerCompare) viewerCompare.spin('y'); }
+    else { viewer.spin(false); if (viewerCompare) viewerCompare.spin(false); }
+  });
+
+  document.getElementById('btnReset').addEventListener('click', () => {
+    viewer.removeAllLabels();
+    viewer.removeAllShapes();
+    viewer.zoomTo();
+    viewer.render();
+  });
+
+  setupHighlight();
+  setupScreenshot();
+
+  if (manifest.length) {
+    await loadStructure(0);
+    setupHover();
+    setupMeasure();
+  }
 }
 
 init().catch(err => {
-  statusEl.textContent = 'Error – see console';
-  console.error(err);
+  document.getElementById('infoBar').innerHTML = `<div class="info-card"><div class="value" style="color:#ff7d45;">Error: ${err.message}</div></div>`;
 });
 </script>
 </body>
