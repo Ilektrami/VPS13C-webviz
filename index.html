@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VPS13C Structure Viewer</title>
+  <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+  <style>
+    :root { --bg:#f4f7fb; --ink:#13233a; --accent:#0c6d94; --card:#ffffff; }
+    body { margin:0; font-family: ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial; background: linear-gradient(140deg,#e9f5ff,#f7fbff 45%,#eef7f3); color:var(--ink); }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .top { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    select, button { padding:10px 12px; border-radius:10px; border:1px solid #b8c9d8; background:#fff; }
+    .card { background:var(--card); border:1px solid #d8e5f0; border-radius:14px; box-shadow:0 8px 24px rgba(0,40,80,.08); }
+    #viewer { width:100%; height:70vh; min-height:460px; }
+    .meta { margin-top:12px; padding:12px; }
+    a { color:var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>VPS13C Predicted Structures</h2>
+    <div class="top card" style="padding:12px;">
+      <label for="species"><strong>Species:</strong></label>
+      <select id="species"></select>
+      <button id="reload">Load</button>
+      <span id="status"></span>
+    </div>
+    <div class="card" style="margin-top:12px; overflow:hidden;">
+      <div id="viewer"></div>
+    </div>
+    <div id="meta" class="card meta"></div>
+  </div>
+
+<script>
+let viewer, manifest=[];
+const speciesSel = document.getElementById('species');
+const statusEl = document.getElementById('status');
+const metaEl = document.getElementById('meta');
+
+async function init() {
+  manifest = await fetch('manifest.json').then(r => r.json());
+  manifest.forEach((m, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = m.id;
+    speciesSel.appendChild(opt);
+  });
+
+  viewer = $3Dmol.createViewer('viewer', {backgroundColor: 'white'});
+  document.getElementById('reload').addEventListener('click', loadSelected);
+  speciesSel.addEventListener('change', loadSelected);
+  if (manifest.length) loadSelected();
+}
+
+async function loadSelected() {
+  const m = manifest[speciesSel.value];
+  statusEl.textContent = 'Loading...';
+  const pdb = await fetch(m.pdb).then(r => r.text());
+  viewer.clear();
+  viewer.addModel(pdb, 'pdb');
+  viewer.setStyle({}, {cartoon:{color:'#2f7ea1'}});
+  viewer.zoomTo();
+  viewer.render();
+
+  let ranking = {};
+  try { ranking = await fetch(m.ranking).then(r => r.json()); } catch(e) {}
+  metaEl.innerHTML = `
+    <strong>${m.id}</strong><br>
+    Files: <a href="${m.pdb}">ranked_0.pdb</a> | <a href="${m.ranking}">ranking_debug.json</a><br>
+    Ranking keys: ${Object.keys(ranking).join(', ') || 'n/a'}
+  `;
+  statusEl.textContent = 'Loaded';
+}
+
+init().catch(err => {
+  statusEl.textContent = 'Failed';
+  metaEl.textContent = err;
+});
+</script>
+</body>
+</html>
