@@ -449,8 +449,8 @@ async function loadStructure(idx) {
   let relaxHtml = '';
   if (modelName && relax[modelName]) {
     const rm = relax[modelName];
-    const totalV = (rm.remaining_violations_count || []).reduce((a, b) => a + b, 0);
-    const maxV   = Math.max(...(rm.remaining_violations_count || [0]));
+    const totalV = rm.remaining_violations_count ?? 0;
+    const maxV   = rm.remaining_violations ? Math.max(...rm.remaining_violations) : 0;
     relaxHtml = `
     <div class="info-card">
       <div class="label">Relax Violations</div>
